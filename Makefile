@@ -29,6 +29,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -rf $(TEST_BUILD_DIR)
 
 rebuild: clean build
 
@@ -49,5 +50,3 @@ help:
 	@echo "  install   - Install the game to system"
 	@echo "  uninstall - Remove the game from system"
 	@echo "  reinstall - Uninstall, rebuild, and install again"
-
-.PHONY: all build create_dirs clean rebuild install uninstall reinstall help

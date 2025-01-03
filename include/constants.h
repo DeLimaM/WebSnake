@@ -2,8 +2,8 @@
 #define CONSTANTS_H
 
 #define BOARD_WIDTH 20
-#define BOARD_HEIGHT 20
-#define INITIAL_SNAKE_LENGTH 4
+#define BOARD_HEIGHT 10
+#define INITIAL_SNAKE_LENGTH 5
 
 typedef enum { WAITING, RUNNING, GAME_OVER } GameState;
 
