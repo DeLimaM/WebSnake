@@ -3,64 +3,73 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CELL_EMPTY ' '
-#define CELL_SNAKE 'o'
-#define CELL_FOOD 'x'
-
-void init_board(char board[BOARD_WIDTH][BOARD_HEIGHT]) {
-  for (int i = 0; i < BOARD_WIDTH; i++) {
-    for (int j = 0; j < BOARD_HEIGHT; j++) {
-      board[i][j] = CELL_EMPTY;
-    }
-  }
+void init_board(char board[GAME_BOARD_WIDTH][GAME_BOARD_HEIGHT]) {
+  memset(board, RENDERER_CELL_EMPTY, sizeof(board));
 }
 
-void draw_snake(char board[BOARD_WIDTH][BOARD_HEIGHT], Game *game) {
+void draw_snake(char board[GAME_BOARD_WIDTH][GAME_BOARD_HEIGHT], Game *game) {
   for (int i = 0; i < game->snake_length; i++) {
     Position pos = game->snake[i];
-    board[pos.x][pos.y] = CELL_SNAKE;
+    board[pos.x][pos.y] = RENDERER_CELL_SNAKE;
   }
 }
 
-void draw_food(char board[BOARD_WIDTH][BOARD_HEIGHT], Game *game) {
+void draw_food(char board[GAME_BOARD_WIDTH][GAME_BOARD_HEIGHT], Game *game) {
   Position pos = game->food;
-  board[pos.x][pos.y] = CELL_FOOD;
-}
-
-void append_game_infos(char *buffer, Game *game) {
-  char infos[128];
-  sprintf(infos, "\nScore: %d | State: %s\n",
-          game->snake_length - INITIAL_SNAKE_LENGTH,
-          game->state == RUNNING     ? "Running"
-          : game->state == GAME_OVER ? "Game Over"
-                                     : "Waiting");
-  strcat(buffer, infos);
+  board[pos.x][pos.y] = RENDERER_CELL_FOOD;
 }
 
 char *render_game(Game *game) {
-  static char buffer[BOARD_WIDTH * BOARD_HEIGHT];
+  static char buffer[RENDERER_BUFFER_SIZE];
+  static char board_html[RENDERER_BOARD_HTML_SIZE];
+  static char info_html[RENDERER_INFO_HTML_SIZE];
+  char board[GAME_BOARD_WIDTH][GAME_BOARD_HEIGHT];
 
-  char board[BOARD_WIDTH][BOARD_HEIGHT];
   init_board(board);
-
   draw_snake(board, game);
   draw_food(board, game);
 
-  char *ptr = buffer;
-  ptr += sprintf(ptr, "+%.*s+\n", BOARD_WIDTH, "----------------");
+  char *ptr = board_html;
+  *ptr = '\0';
 
-  for (int j = 0; j < BOARD_HEIGHT; j++) {
-    ptr += sprintf(ptr, "|");
-    for (int i = 0; i < BOARD_WIDTH; i++) {
-      ptr += sprintf(ptr, "%c", board[i][j]);
+  for (int y = 0; y < GAME_BOARD_HEIGHT; y++) {
+    ptr += sprintf(ptr, "<div class='row'>");
+    for (int x = 0; x < GAME_BOARD_WIDTH; x++) {
+      const char *cell_class = board[x][y] == RENDERER_CELL_SNAKE ? "cell snake"
+                               : board[x][y] == RENDERER_CELL_FOOD
+                                   ? "cell food"
+                                   : "cell empty";
+      ptr += sprintf(ptr, "<div class='%s'></div>", cell_class);
     }
-    ptr += sprintf(ptr, "|\n");
+    ptr += sprintf(ptr, "</div>\n");
   }
 
-  ptr += sprintf(ptr, "+%.*s+\n", BOARD_WIDTH, "----------------");
-  append_game_infos(buffer, game);
+  snprintf(info_html, RENDERER_INFO_HTML_SIZE,
+           "<p>Score: %d</p><p>State: %s</p>",
+           game->snake_length - GAME_INITIAL_SNAKE_LENGTH,
+           game->state == GAME_STATE_RUNNING ? "Running"
+           : game->state == GAME_STATE_OVER  ? "Game Over"
+                                             : "Waiting");
 
+  ptr = buffer;
+  *ptr = '\0';
+
+  FILE *template = fopen("src/game/template.html", "r");
+  if (!template) {
+    return "Error: Cannot open template file";
+  }
+
+  char line[RENDERER_INFO_HTML_SIZE];
+  while (fgets(line, sizeof(line), template)) {
+    if (strstr(line, "<!-- GAME_BOARD -->")) {
+      ptr += sprintf(ptr, "%s", board_html);
+    } else if (strstr(line, "<!-- GAME_INFO -->")) {
+      ptr += sprintf(ptr, "%s", info_html);
+    } else {
+      ptr += sprintf(ptr, "%s", line);
+    }
+  }
+
+  fclose(template);
   return buffer;
-
-  append_game_infos(buffer, game);
 }

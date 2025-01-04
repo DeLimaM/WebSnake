@@ -50,3 +50,25 @@ help:
 	@echo "  install   - Install the game to system"
 	@echo "  uninstall - Remove the game from system"
 	@echo "  reinstall - Uninstall, rebuild, and install again"
+
+TEST_SRC_DIR = tests/src
+TEST_BUILD_DIR = tests/build
+TEST_OUT_DIR = tests/out
+TEST_SOURCES = $(shell find $(TEST_SRC_DIR) -name '*.c')
+TEST_TARGETS = $(TEST_SOURCES:$(TEST_SRC_DIR)/%.c=$(TEST_BUILD_DIR)/%)
+
+tests: create_test_dirs $(TEST_TARGETS)
+	@for test in $(TEST_TARGETS); do ./$$test; done
+
+test-%: create_test_dirs $(TEST_BUILD_DIR)/%
+	./$(TEST_BUILD_DIR)/$*
+
+create_test_dirs:
+	mkdir -p $(TEST_BUILD_DIR)
+	mkdir -p $(TEST_OUT_DIR)
+
+$(TEST_BUILD_DIR)/%: $(TEST_SRC_DIR)/%.c $(filter-out $(BUILD_DIR)/main.o, $(OBJECTS))
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+.PHONY: all build clean rebuild create_dirs install uninstall reinstall \
+        tests test-% create_test_dirs help

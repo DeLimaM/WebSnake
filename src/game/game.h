@@ -5,7 +5,7 @@
 #include <pthread.h>
 
 typedef struct {
-  Position snake[BOARD_WIDTH * BOARD_HEIGHT];
+  Position snake[GAME_BOARD_WIDTH * GAME_BOARD_HEIGHT];
   int snake_length;
   Position food;
   Direction direction;

@@ -1,1 +1,3 @@
 WebSnake.code-workspace
+build/
+tests/out
