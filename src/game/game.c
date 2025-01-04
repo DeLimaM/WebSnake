@@ -42,12 +42,17 @@ static int check_collision(Game *game) {
 
 void init_game(Game *game) {
   pthread_mutex_init(&game->mutex, NULL);
-  game->snake_length = 1;
+  game->snake_length = GAME_INITIAL_SNAKE_LENGTH;
   game->direction = DIRECTION_RIGHT;
   game->state = GAME_STATE_RUNNING;
 
-  game->snake[0].x = GAME_BOARD_WIDTH / 2;
-  game->snake[0].y = GAME_BOARD_HEIGHT / 2;
+  int start_x = GAME_BOARD_WIDTH / 2;
+  int start_y = GAME_BOARD_HEIGHT / 2;
+
+  for (int i = 0; i < GAME_INITIAL_SNAKE_LENGTH; i++) {
+    game->snake[i].x = start_x - i;
+    game->snake[i].y = start_y;
+  }
 
   place_food(game);
 }

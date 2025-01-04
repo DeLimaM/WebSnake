@@ -3,27 +3,31 @@
 #include <stdio.h>
 #include <string.h>
 
-void init_board(char board[GAME_BOARD_WIDTH][GAME_BOARD_HEIGHT]) {
-  memset(board, RENDERER_CELL_EMPTY, sizeof(board));
-}
-
-void draw_snake(char board[GAME_BOARD_WIDTH][GAME_BOARD_HEIGHT], Game *game) {
-  for (int i = 0; i < game->snake_length; i++) {
-    Position pos = game->snake[i];
-    board[pos.x][pos.y] = RENDERER_CELL_SNAKE;
+void init_board(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH]) {
+  for (int y = 0; y < GAME_BOARD_HEIGHT; y++) {
+    for (int x = 0; x < GAME_BOARD_WIDTH; x++) {
+      board[y][x] = RENDERER_CELL_EMPTY;
+    }
   }
 }
 
-void draw_food(char board[GAME_BOARD_WIDTH][GAME_BOARD_HEIGHT], Game *game) {
+void draw_snake(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH], Game *game) {
+  for (int i = 0; i < game->snake_length; i++) {
+    Position pos = game->snake[i];
+    board[pos.y][pos.x] = RENDERER_CELL_SNAKE;
+  }
+}
+
+void draw_food(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH], Game *game) {
   Position pos = game->food;
-  board[pos.x][pos.y] = RENDERER_CELL_FOOD;
+  board[pos.y][pos.x] = RENDERER_CELL_FOOD;
 }
 
 char *render_game(Game *game) {
   static char buffer[RENDERER_BUFFER_SIZE];
   static char board_html[RENDERER_BOARD_HTML_SIZE];
   static char info_html[RENDERER_INFO_HTML_SIZE];
-  char board[GAME_BOARD_WIDTH][GAME_BOARD_HEIGHT];
+  char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH];
 
   init_board(board);
   draw_snake(board, game);
@@ -35,8 +39,8 @@ char *render_game(Game *game) {
   for (int y = 0; y < GAME_BOARD_HEIGHT; y++) {
     ptr += sprintf(ptr, "<div class='row'>");
     for (int x = 0; x < GAME_BOARD_WIDTH; x++) {
-      const char *cell_class = board[x][y] == RENDERER_CELL_SNAKE ? "cell snake"
-                               : board[x][y] == RENDERER_CELL_FOOD
+      const char *cell_class = board[y][x] == RENDERER_CELL_SNAKE ? "cell snake"
+                               : board[y][x] == RENDERER_CELL_FOOD
                                    ? "cell food"
                                    : "cell empty";
       ptr += sprintf(ptr, "<div class='%s'></div>", cell_class);

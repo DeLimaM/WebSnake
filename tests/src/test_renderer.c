@@ -9,10 +9,21 @@ void test_renderer() {
   Game game = {0};
   game.snake_length = GAME_INITIAL_SNAKE_LENGTH;
   game.state = GAME_STATE_RUNNING;
-  game.snake[0] = (Position){5, 5};
-  game.food = (Position){10, 10};
+  for (int i = 0; i < GAME_INITIAL_SNAKE_LENGTH; i++) {
+    game.snake[i] = (Position){5 - i, 5};
+  }
+  game.food = (Position){10, 5};
 
   char *output = render_game(&game);
+
+  FILE *f = fopen(TESTS_HTML_OUTPUT_PATH, "w");
+  if (f) {
+    fprintf(f, "%s", output);
+    fclose(f);
+    printf("\nTest output written to %s\n", TESTS_HTML_OUTPUT_PATH);
+  } else {
+    printf("\nFailed to write test output\n");
+  }
 
   assert(output != NULL);
   assert(strstr(output, "<!DOCTYPE html>") != NULL);
@@ -21,16 +32,7 @@ void test_renderer() {
   assert(strstr(output, "Score: 0") != NULL);
   assert(strstr(output, "State: Running") != NULL);
 
-  printf("\nRenderer test passed!\n");
-
-  FILE *f = fopen(TESTS_HTML_OUTPUT_PATH, "w");
-  if (f) {
-    fprintf(f, "%s", output);
-    fclose(f);
-    printf("Test output written to %s\n", TESTS_HTML_OUTPUT_PATH);
-  } else {
-    printf("Failed to write test output\n");
-  }
+  printf("Renderer test passed!\n");
 }
 
 int main() {
