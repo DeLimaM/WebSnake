@@ -94,6 +94,8 @@ void update_game(Game *game) {
   case DIRECTION_RIGHT:
     game->snake[0].x++;
     break;
+  case DIRECTION_NONE:
+    break;
   }
 
   if (check_collision(game)) {

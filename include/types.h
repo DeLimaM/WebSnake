@@ -13,7 +13,8 @@ typedef enum {
   DIRECTION_UP,
   DIRECTION_DOWN,
   DIRECTION_LEFT,
-  DIRECTION_RIGHT
+  DIRECTION_RIGHT,
+  DIRECTION_NONE
 } Direction;
 typedef struct {
   int x;
