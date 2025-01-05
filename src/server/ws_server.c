@@ -98,7 +98,7 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
                           void *user __attribute__((unused)), void *in,
                           size_t len __attribute__((unused))) {
   switch (reason) {
-  case LWS_CALLBACK_ESTABLISHED:
+  case LWS_CALLBACK_ESTABLISHED: {
     log_message("CONNECT", "New client connected", ANSI_COLOR_GREEN);
     pthread_mutex_lock(&server_state.game.mutex);
     init_game(&server_state.game);
@@ -110,33 +110,25 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
                 LWS_WRITE_TEXT);
     }
     break;
+  }
 
-  case LWS_CALLBACK_CLOSED:
+  case LWS_CALLBACK_CLOSED: {
     log_message("DISCONNECT", "Client disconnected", ANSI_COLOR_RED);
     break;
+  }
 
   case LWS_CALLBACK_RECEIVE: {
     log_message("RECEIVED", (char *)in, ANSI_COLOR_BLUE);
 
-    struct json_object *json = json_tokener_parse((char *)in);
+    struct json_object *json = parse_json_message((char *)in);
     if (!json) {
-      log_message("ERROR", "Failed to parse JSON", ANSI_COLOR_RED);
       break;
     }
 
     struct json_object *direction_obj;
     if (json_object_object_get_ex(json, "direction", &direction_obj)) {
       const char *dir_str = json_object_get_string(direction_obj);
-      Direction new_dir;
-
-      if (strcmp(dir_str, "up") == 0)
-        new_dir = DIRECTION_UP;
-      else if (strcmp(dir_str, "down") == 0)
-        new_dir = DIRECTION_DOWN;
-      else if (strcmp(dir_str, "left") == 0)
-        new_dir = DIRECTION_LEFT;
-      else if (strcmp(dir_str, "right") == 0)
-        new_dir = DIRECTION_RIGHT;
+      Direction new_dir = parse_direction_string(dir_str);
 
       change_direction(&server_state.game, new_dir);
       update_game(&server_state.game);
