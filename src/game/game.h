@@ -5,7 +5,6 @@
 #include "../../include/types.h"
 
 void init_game(Game *game);
-void update_game(Game *game);
-int change_direction(Game *game, Direction new_direction);
+void update_game(Game *game, Direction new_direction);
 
 #endif // GAME_H

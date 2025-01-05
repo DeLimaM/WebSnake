@@ -122,8 +122,7 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
       const char *dir_str = json_object_get_string(direction_obj);
       Direction new_dir = parse_direction_string(dir_str);
 
-      change_direction(&server_state.game, new_dir);
-      update_game(&server_state.game);
+      update_game(&server_state.game, new_dir);
     }
     json_object_put(json);
 

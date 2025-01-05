@@ -4,18 +4,6 @@
 #include <string.h>
 #include <time.h>
 
-static void place_food(Game *game);
-static int is_position_occupied(Game *game, Position pos);
-static int check_collision(Game *game);
-
-static void place_food(Game *game) {
-  srand(time(NULL));
-  do {
-    game->food.x = rand() % GAME_BOARD_WIDTH;
-    game->food.y = rand() % GAME_BOARD_HEIGHT;
-  } while (is_position_occupied(game, game->food));
-}
-
 static int is_position_occupied(Game *game, Position pos) {
   for (int i = 0; i < game->snake_length; i++) {
     if (game->snake[i].x == pos.x && game->snake[i].y == pos.y) {
@@ -25,13 +13,16 @@ static int is_position_occupied(Game *game, Position pos) {
   return 0;
 }
 
+static void place_food(Game *game) {
+  srand(time(NULL));
+  do {
+    game->food.x = rand() % GAME_BOARD_WIDTH;
+    game->food.y = rand() % GAME_BOARD_HEIGHT;
+  } while (is_position_occupied(game, game->food));
+}
+
 static int check_collision(Game *game) {
   Position head = game->snake[0];
-
-  if (head.x < 0 || head.x >= GAME_BOARD_WIDTH || head.y < 0 ||
-      head.y >= GAME_BOARD_HEIGHT) {
-    return 1;
-  }
 
   for (int i = 1; i < game->snake_length; i++) {
     if (head.x == game->snake[i].x && head.y == game->snake[i].y) {
@@ -58,22 +49,26 @@ void init_game(Game *game) {
   place_food(game);
 }
 
-int change_direction(Game *game, Direction new_direction) {
-  pthread_mutex_lock(&game->mutex);
-  if ((new_direction == DIRECTION_LEFT && game->direction != DIRECTION_RIGHT) ||
-      (new_direction == DIRECTION_RIGHT && game->direction != DIRECTION_LEFT) ||
-      (new_direction == DIRECTION_UP && game->direction != DIRECTION_DOWN) ||
-      (new_direction == DIRECTION_DOWN && game->direction != DIRECTION_UP)) {
-    game->direction = new_direction;
-  }
-  pthread_mutex_unlock(&game->mutex);
-  return 0;
+int can_change_direction(Game *game, Direction new_direction) {
+  return (new_direction == DIRECTION_LEFT &&
+          game->direction != DIRECTION_RIGHT) ||
+         (new_direction == DIRECTION_RIGHT &&
+          game->direction != DIRECTION_LEFT) ||
+         (new_direction == DIRECTION_UP && game->direction != DIRECTION_DOWN) ||
+         (new_direction == DIRECTION_DOWN && game->direction != DIRECTION_UP);
 }
 
-void update_game(Game *game) {
+void update_game(Game *game, Direction new_direction) {
   pthread_mutex_lock(&game->mutex);
 
   if (game->state != GAME_STATE_RUNNING) {
+    pthread_mutex_unlock(&game->mutex);
+    return;
+  }
+
+  if (can_change_direction(game, new_direction)) {
+    game->direction = new_direction;
+  } else {
     pthread_mutex_unlock(&game->mutex);
     return;
   }
@@ -83,16 +78,18 @@ void update_game(Game *game) {
 
   switch (game->direction) {
   case DIRECTION_UP:
-    game->snake[0].y--;
+    game->snake[0].y =
+        (game->snake[0].y - 1 + GAME_BOARD_HEIGHT) % GAME_BOARD_HEIGHT;
     break;
   case DIRECTION_DOWN:
-    game->snake[0].y++;
+    game->snake[0].y = (game->snake[0].y + 1) % GAME_BOARD_HEIGHT;
     break;
   case DIRECTION_LEFT:
-    game->snake[0].x--;
+    game->snake[0].x =
+        (game->snake[0].x - 1 + GAME_BOARD_WIDTH) % GAME_BOARD_WIDTH;
     break;
   case DIRECTION_RIGHT:
-    game->snake[0].x++;
+    game->snake[0].x = (game->snake[0].x + 1) % GAME_BOARD_WIDTH;
     break;
   case DIRECTION_NONE:
     break;
