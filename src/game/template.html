@@ -25,6 +25,26 @@
             background-color: #eee;
         }
     </style>
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+
+        document.addEventListener('keydown', (e) => {
+            let direction = null;
+            switch (e.key) {
+                case 'ArrowUp': direction = 'up'; break;
+                case 'ArrowDown': direction = 'down'; break;
+                case 'ArrowLeft': direction = 'left'; break;
+                case 'ArrowRight': direction = 'right'; break;
+            }
+            if (direction) {
+                ws.send(JSON.stringify({ direction }));
+            }
+        });
+
+        ws.onmessage = (event) => {
+            document.body.innerHTML = event.data;
+        };
+    </script>
 </head>
 
 <body>

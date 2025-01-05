@@ -1,6 +1,10 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#define GAME_BOARD_WIDTH 20
+#define GAME_BOARD_HEIGHT 10
+#define GAME_INITIAL_SNAKE_LENGTH 5
+
 #define RENDERER_BUFFER_SIZE 16384
 #define RENDERER_BOARD_HTML_SIZE 8192
 #define RENDERER_INFO_HTML_SIZE 1024
@@ -9,28 +13,14 @@
 #define RENDERER_CELL_SNAKE 'o'
 #define RENDERER_CELL_FOOD 'x'
 
-#define GAME_BOARD_WIDTH 20
-#define GAME_BOARD_HEIGHT 10
-#define GAME_INITIAL_SNAKE_LENGTH 5
-
-typedef enum {
-  GAME_STATE_WAITING,
-  GAME_STATE_RUNNING,
-  GAME_STATE_OVER
-} GameState;
-
-typedef enum {
-  DIRECTION_UP,
-  DIRECTION_DOWN,
-  DIRECTION_LEFT,
-  DIRECTION_RIGHT
-} Direction;
-
-typedef struct {
-  int x;
-  int y;
-} Position;
+#define SERVER_PORT 8080
+#define SERVER_HTTP_BUFFER_SIZE 4096
 
 #define TESTS_HTML_OUTPUT_PATH "tests/out/test_output.html"
+
+#define ANSI_COLOR_GREEN "\x1b[32m"
+#define ANSI_COLOR_BLUE "\x1b[34m"
+#define ANSI_COLOR_RED "\x1b[31m"
+#define ANSI_COLOR_RESET "\x1b[0m"
 
 #endif // CONSTANTS_H

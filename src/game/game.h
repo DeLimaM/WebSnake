@@ -2,16 +2,7 @@
 #define GAME_H
 
 #include "../../include/constants.h"
-#include <pthread.h>
-
-typedef struct {
-  Position snake[GAME_BOARD_WIDTH * GAME_BOARD_HEIGHT];
-  int snake_length;
-  Position food;
-  Direction direction;
-  GameState state;
-  pthread_mutex_t mutex;
-} Game;
+#include "../../include/types.h"
 
 void init_game(Game *game);
 void update_game(Game *game);
