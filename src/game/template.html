@@ -46,24 +46,53 @@
     <style>
         .board {
             font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            width: 90vw;
+            height: 90vh;
+            margin: 5vh auto;
+            position: relative;
+        }
+
+        .info {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .row {
+            display: flex;
+            flex: 1;
         }
 
         .cell {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
+            flex: 1;
+            margin: 1px;
+            min-width: 0;
         }
 
-        .snake {
-            background-color: green;
+        .row {
+            display: flex;
+            flex: 1;
         }
 
-        .food {
-            background-color: red;
+        .cell.snake {
+            background-color: #4CAF50;
         }
 
-        .empty {
-            background-color: #eee;
+        .cell.food {
+            background-color: #f44336;
+        }
+
+        .cell.empty {
+            background-color: #e0e0e0;
         }
     </style>
 </head>
