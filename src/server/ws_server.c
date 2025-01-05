@@ -23,15 +23,6 @@ static struct lws_protocols protocols[] = {
         .id = 2,
     }};
 
-static void log_message(const char *type, const char *msg, const char *color) {
-  time_t now;
-  time(&now);
-  char *date = ctime(&now);
-  date[strlen(date) - 1] = '\0';
-  fprintf(stderr, "%s[%s] %s: %s%s\n", color, date, type, msg,
-          ANSI_COLOR_RESET);
-}
-
 static int handle_http_request(struct lws *wsi) {
   if (lws_http_transaction_completed(wsi)) {
     return 0;
@@ -39,7 +30,7 @@ static int handle_http_request(struct lws *wsi) {
 
   char *rendered = render_game(&server_state.game);
   if (!rendered) {
-    log_message("ERROR", "Failed to render game", ANSI_COLOR_RED);
+    log_message_error("Failed to render game");
     return -1;
   }
 
@@ -69,7 +60,7 @@ static int handle_http_request(struct lws *wsi) {
     return -1;
   }
 
-  log_message("SENDING", "HTML render", ANSI_COLOR_GREEN);
+  log_message_sending("Initial HTML render");
   if (lws_write(wsi, (unsigned char *)rendered, strlen(rendered),
                 LWS_WRITE_HTTP) < 0) {
     return -1;
@@ -81,7 +72,7 @@ static int handle_http_request(struct lws *wsi) {
 static struct json_object *parse_json_message(const char *message) {
   struct json_object *json = json_tokener_parse(message);
   if (!json) {
-    log_message("ERROR", "Failed to parse JSON", ANSI_COLOR_RED);
+    log_message_error("Failed to parse JSON message");
     return NULL;
   }
   return json;
@@ -97,7 +88,7 @@ static Direction parse_direction_string(const char *dir_str) {
   if (strcmp(dir_str, "right") == 0)
     return DIRECTION_RIGHT;
   else {
-    log_message("ERROR", "Invalid direction", ANSI_COLOR_RED);
+    log_message_error("Invalid direction string");
     return DIRECTION_NONE;
   }
 }
@@ -107,28 +98,28 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
                           size_t len __attribute__((unused))) {
   switch (reason) {
   case LWS_CALLBACK_ESTABLISHED: {
-    log_message("CONNECT", "New client connected", ANSI_COLOR_GREEN);
+    log_message_info("New client connected");
     pthread_mutex_lock(&server_state.game.mutex);
     init_game(&server_state.game);
     pthread_mutex_unlock(&server_state.game.mutex);
-    log_message("INFO", "Game initialized", ANSI_COLOR_GREEN);
+    log_message_info("Game initialized");
 
     char *rendered = render_game(&server_state.game);
     if (rendered) {
       lws_write(wsi, (unsigned char *)rendered, strlen(rendered),
                 LWS_WRITE_TEXT);
-      log_message("SENDING", "HTML", ANSI_COLOR_GREEN);
+      log_message_sending("Updated game state");
     }
     break;
   }
 
   case LWS_CALLBACK_CLOSED: {
-    log_message("DISCONNECT", "Client disconnected", ANSI_COLOR_RED);
+    log_message_info("Client disconnected");
     break;
   }
 
   case LWS_CALLBACK_RECEIVE: {
-    log_message("RECEIVED", (char *)in, ANSI_COLOR_BLUE);
+    log_message_received((char *)in);
 
     struct json_object *json = parse_json_message((char *)in);
     if (!json) {
@@ -147,17 +138,17 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
 
     char *rendered = render_game(&server_state.game);
     if (!rendered) {
-      log_message("ERROR", "Failed to render game", ANSI_COLOR_RED);
+      log_message_error("Failed to render game");
       break;
     }
 
-    log_message("SENDING", "HTML render", ANSI_COLOR_GREEN);
+    log_message_sending("Updated game state");
     lws_write(wsi, (unsigned char *)rendered, strlen(rendered), LWS_WRITE_TEXT);
     break;
   }
 
   case LWS_CALLBACK_HTTP: {
-    log_message("HTTP", "HTTP request received", ANSI_COLOR_BLUE);
+    log_message_received("HTTP request");
     return handle_http_request(wsi);
   }
 
@@ -181,12 +172,12 @@ int start_ws_server(int port) {
   if (!server_state.context) {
     return -1;
   }
-  log_message("INFO", "Server started", ANSI_COLOR_GREEN);
+  log_message_info("Server started");
 
   while (1) {
     lws_service(server_state.context, SERVER_SERVICE_INTERVAL);
   }
-  log_message("INFO", "Server stopped", ANSI_COLOR_RED);
+  log_message_info("Server stopped");
 
   return 0;
 }

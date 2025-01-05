@@ -51,7 +51,8 @@ char *render_game(Game *game) {
   char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH];
 
   if (!load_template()) {
-    return "Renderer Error: Cannot load template file";
+    log_message_error("The renderer failed to load the template");
+    return;
   }
 
   init_board(board);

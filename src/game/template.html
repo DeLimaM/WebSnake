@@ -3,8 +3,13 @@
 
 <head>
     <script>
-        console.log('Starting WebSocket connection...');
+        function getTimestamp() {
+            const now = new Date();
+            return `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
+        }
+
         const ws = new WebSocket('ws://localhost:8080');
+        console.log(`${getTimestamp()} Connecting to WebSocket server...`);
 
         document.addEventListener('keydown', (e) => {
             let direction = null;
@@ -15,25 +20,26 @@
                 case 'ArrowRight': direction = 'right'; break;
             }
             if (direction) {
-                console.log('Sending direction:', direction);
-                ws.send(JSON.stringify({ direction }));
+                const message = JSON.stringify({ direction });
+                console.log(`${getTimestamp()} SENDING: ${message}`);
+                ws.send(message);
             }
         });
 
         ws.onopen = () => {
-            console.log('WebSocket connection established:', new Date().toISOString());
+            console.log(`${getTimestamp()} CONNECTED`);
         };
 
         ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            console.error(`${getTimestamp()} ERROR:`, error);
         };
 
         ws.onclose = () => {
-            console.log('WebSocket connection closed:', new Date().toISOString());
+            console.log(`${getTimestamp()} DISCONNECTED`);
         };
 
         ws.onmessage = (event) => {
-            console.log('Message received:', new Date().toISOString());
+            console.log(`${getTimestamp()} RECEIVED: Updated game state`);
             document.body.innerHTML = event.data;
         };
     </script>

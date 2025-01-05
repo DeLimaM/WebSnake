@@ -3,6 +3,7 @@
 
 #include "../../include/constants.h"
 #include "../../include/types.h"
+#include "../../logging/logging.h"
 #include "game.h"
 
 char *render_game(Game *game);
