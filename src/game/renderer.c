@@ -52,7 +52,7 @@ char *render_game(Game *game) {
 
   if (!load_template()) {
     log_message_error("The renderer failed to load the template");
-    return;
+    return NULL;
   }
 
   init_board(board);

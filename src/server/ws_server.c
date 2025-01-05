@@ -24,10 +24,6 @@ static struct lws_protocols protocols[] = {
     }};
 
 static int handle_http_request(struct lws *wsi) {
-  if (lws_http_transaction_completed(wsi)) {
-    return 0;
-  }
-
   char *rendered = render_game(&server_state.game);
   if (!rendered) {
     log_message_error("Failed to render game");
@@ -52,11 +48,6 @@ static int handle_http_request(struct lws *wsi) {
 
   if (lws_write(wsi, buffer + LWS_PRE, p - (buffer + LWS_PRE),
                 LWS_WRITE_HTTP_HEADERS) < 0) {
-    return -1;
-  }
-
-  if (lws_write(wsi, (unsigned char *)rendered, content_length,
-                LWS_WRITE_HTTP) < 0) {
     return -1;
   }
 
