@@ -2,6 +2,28 @@
 #include <stdio.h>
 #include <string.h>
 
+static char template_cache[RENDERER_TEMPLATE_CACHE_SIZE];
+static int template_loaded = 0;
+
+static int load_template() {
+  if (template_loaded) {
+    return 1;
+  }
+
+  FILE *template = fopen(RENDERER_TEMPLATE_PATH, "r");
+  if (!template) {
+    return 0;
+  }
+
+  size_t bytes_read =
+      fread(template_cache, 1, RENDERER_BUFFER_SIZE - 1, template);
+  template_cache[bytes_read] = '\0';
+  template_loaded = 1;
+
+  fclose(template);
+  return 1;
+}
+
 void init_board(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH]) {
   for (int y = 0; y < GAME_BOARD_HEIGHT; y++) {
     for (int x = 0; x < GAME_BOARD_WIDTH; x++) {
@@ -27,6 +49,10 @@ char *render_game(Game *game) {
   static char board_html[RENDERER_BOARD_HTML_SIZE];
   static char info_html[RENDERER_INFO_HTML_SIZE];
   char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH];
+
+  if (!load_template()) {
+    return "Renderer Error: Cannot load template file";
+  }
 
   init_board(board);
   draw_snake(board, game);
@@ -57,22 +83,19 @@ char *render_game(Game *game) {
   ptr = buffer;
   *ptr = '\0';
 
-  FILE *template = fopen("src/game/template.html", "r");
-  if (!template) {
-    return "Error: Cannot open template file";
-  }
-
-  char line[RENDERER_INFO_HTML_SIZE];
-  while (fgets(line, sizeof(line), template)) {
-    if (strstr(line, "<!-- GAME_BOARD -->")) {
+  char *template_ptr = template_cache;
+  while (*template_ptr) {
+    if (strstr(template_ptr, "<!-- GAME_BOARD -->") == template_ptr) {
       ptr += sprintf(ptr, "%s", board_html);
-    } else if (strstr(line, "<!-- GAME_INFO -->")) {
+      template_ptr += strlen("<!-- GAME_BOARD -->");
+    } else if (strstr(template_ptr, "<!-- GAME_INFO -->") == template_ptr) {
       ptr += sprintf(ptr, "%s", info_html);
+      template_ptr += strlen("<!-- GAME_INFO -->");
     } else {
-      ptr += sprintf(ptr, "%s", line);
+      *ptr++ = *template_ptr++;
     }
   }
+  *ptr = '\0';
 
-  fclose(template);
   return buffer;
 }

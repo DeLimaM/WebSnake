@@ -7,22 +7,21 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
                           void *user, void *in, size_t len);
 
 static ServerState server_state;
-static struct lws_protocols protocols[] = {{.name = "http",
-                                            .callback = callback_snake,
-                                            .per_session_data_size = 0,
-                                            .rx_buffer_size = 0},
-                                           {.name = "snake-protocol",
-                                            .callback = callback_snake,
-                                            .per_session_data_size = 0,
-                                            .rx_buffer_size = 4096,
-                                            .id = 1,
-                                            .user = NULL},
-                                           {.name = NULL,
-                                            .callback = NULL,
-                                            .per_session_data_size = 0,
-                                            .rx_buffer_size = 0,
-                                            .id = 0,
-                                            .user = NULL}};
+static struct lws_protocols protocols[] = {
+    {
+        .name = "snake-protocol",
+        .callback = callback_snake,
+        .per_session_data_size = 0,
+        .rx_buffer_size = 4096,
+        .id = 1,
+    },
+    {
+        .name = "http",
+        .callback = callback_snake,
+        .per_session_data_size = 0,
+        .rx_buffer_size = SERVER_HTTP_BUFFER_SIZE,
+        .id = 2,
+    }};
 
 static void log_message(const char *type, const char *msg, const char *color) {
   time_t now;
@@ -34,40 +33,49 @@ static void log_message(const char *type, const char *msg, const char *color) {
 }
 
 static int handle_http_request(struct lws *wsi) {
-  if (lws_http_transaction_completed(wsi))
+  if (lws_http_transaction_completed(wsi)) {
     return 0;
+  }
 
   char *rendered = render_game(&server_state.game);
   if (!rendered) {
+    log_message("ERROR", "Failed to render game", ANSI_COLOR_RED);
     return -1;
   }
+
+  size_t content_length = strlen(rendered);
 
   unsigned char buffer[LWS_PRE + SERVER_HTTP_BUFFER_SIZE];
   unsigned char *p = &buffer[LWS_PRE];
-  if (lws_add_http_header_status(wsi, HTTP_STATUS_OK, &p,
-                                 buffer + sizeof(buffer)) < 0) {
-    return -1;
-  }
-  if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE,
-                                   (unsigned char *)"text/html", 9, &p,
-                                   buffer + sizeof(buffer)) < 0) {
-    return -1;
-  }
-  if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH,
-                                   (unsigned char *)&rendered, strlen(rendered),
-                                   &p, buffer + sizeof(buffer)) < 0) {
-    return -1;
-  }
-  if (lws_finalize_http_header(wsi, &p, buffer + sizeof(buffer)) < 0) {
+  unsigned char *end = buffer + sizeof(buffer);
+
+  if (lws_add_http_common_headers(wsi, HTTP_STATUS_OK, "text/html",
+                                  content_length, &p, end) ||
+      lws_add_http_header_by_token(wsi, WSI_TOKEN_CONNECTION,
+                                   (unsigned char *)"Upgrade", 7, &p, end) ||
+      lws_add_http_header_by_token(wsi, WSI_TOKEN_UPGRADE,
+                                   (unsigned char *)"websocket", 9, &p, end) ||
+      lws_finalize_http_header(wsi, &p, end)) {
     return -1;
   }
 
-  lws_write(wsi, buffer + LWS_PRE, p - (buffer + LWS_PRE),
-            LWS_WRITE_HTTP_HEADERS);
+  if (lws_write(wsi, buffer + LWS_PRE, p - (buffer + LWS_PRE),
+                LWS_WRITE_HTTP_HEADERS) < 0) {
+    return -1;
+  }
 
-  lws_write(wsi, (unsigned char *)rendered, strlen(rendered), LWS_WRITE_HTTP);
+  if (lws_write(wsi, (unsigned char *)rendered, content_length,
+                LWS_WRITE_HTTP) < 0) {
+    return -1;
+  }
 
-  return 0;
+  log_message("SENDING", "HTML render", ANSI_COLOR_GREEN);
+  if (lws_write(wsi, (unsigned char *)rendered, strlen(rendered),
+                LWS_WRITE_HTTP) < 0) {
+    return -1;
+  }
+
+  return lws_http_transaction_completed(wsi);
 }
 
 static struct json_object *parse_json_message(const char *message) {
@@ -103,11 +111,13 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
     pthread_mutex_lock(&server_state.game.mutex);
     init_game(&server_state.game);
     pthread_mutex_unlock(&server_state.game.mutex);
+    log_message("INFO", "Game initialized", ANSI_COLOR_GREEN);
 
     char *rendered = render_game(&server_state.game);
     if (rendered) {
       lws_write(wsi, (unsigned char *)rendered, strlen(rendered),
                 LWS_WRITE_TEXT);
+      log_message("SENDING", "HTML", ANSI_COLOR_GREEN);
     }
     break;
   }
@@ -141,7 +151,7 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
       break;
     }
 
-    log_message("SENDING", "HTML", ANSI_COLOR_GREEN);
+    log_message("SENDING", "HTML render", ANSI_COLOR_GREEN);
     lws_write(wsi, (unsigned char *)rendered, strlen(rendered), LWS_WRITE_TEXT);
     break;
   }
@@ -171,13 +181,11 @@ int start_ws_server(int port) {
   if (!server_state.context) {
     return -1;
   }
-
   log_message("INFO", "Server started", ANSI_COLOR_GREEN);
 
   while (1) {
-    lws_service(server_state.context, 50);
+    lws_service(server_state.context, SERVER_SERVICE_INTERVAL);
   }
-
   log_message("INFO", "Server stopped", ANSI_COLOR_RED);
 
   return 0;
