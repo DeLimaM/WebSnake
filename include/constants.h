@@ -17,6 +17,7 @@
 #define SERVER_PORT 8080
 #define SERVER_HTTP_BUFFER_SIZE 4096
 #define SERVER_SERVICE_INTERVAL 1
+#define SERVER_LOG_BUFFER_SIZE 512
 
 #define TESTS_HTML_OUTPUT_PATH "tests/out/test_output.html"
 
