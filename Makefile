@@ -13,6 +13,10 @@ TARGET = $(BUILD_DIR)/websnake
 
 all: build
 
+restart: rebuild
+	@echo "\n"
+	./$(TARGET)
+
 build: create_dirs $(TARGET)
 
 create_dirs:
@@ -42,15 +46,6 @@ uninstall:
 
 reinstall: uninstall rebuild install
 
-help:
-	@echo "Available targets:"
-	@echo "  build     - Build the snake game"
-	@echo "  clean     - Remove build files"
-	@echo "  rebuild   - Clean and rebuild"
-	@echo "  install   - Install the game to system"
-	@echo "  uninstall - Remove the game from system"
-	@echo "  reinstall - Uninstall, rebuild, and install again"
-
 TEST_SRC_DIR = tests/src
 TEST_BUILD_DIR = tests/build
 TEST_OUT_DIR = tests/out
@@ -69,6 +64,17 @@ create_test_dirs:
 
 $(TEST_BUILD_DIR)/%: $(TEST_SRC_DIR)/%.c $(filter-out $(BUILD_DIR)/main.o, $(OBJECTS))
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+help:
+	@echo "Available targets:"
+	@echo "  build     - Build the snake game"
+	@echo "  clean     - Remove build files"
+	@echo "  rebuild   - Clean and rebuild"
+	@echo "  install   - Install the game to system"
+	@echo "  uninstall - Remove the game from system"
+	@echo "  reinstall - Uninstall, rebuild, and install again"
+	@echo "  tests     - Run tests"
+	@echo "  test-%    - Run a specific test"
 
 .PHONY: all build clean rebuild create_dirs install uninstall reinstall \
         tests test-% create_test_dirs help

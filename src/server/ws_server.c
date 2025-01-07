@@ -196,8 +196,14 @@ int start_ws_server(int port) {
       .uid = -1,
       .options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT,
   };
+  lws_set_log_level(LLL_ERR | LLL_WARN, NULL);
 
   init_game(&server_state.game);
+
+  char info_buf[SERVER_LOG_BUFFER_SIZE];
+  snprintf(info_buf, sizeof(info_buf), "Using renderer buffer size %d",
+           RENDERER_BUFFER_SIZE);
+  log_message_info(info_buf);
 
   server_state.context = lws_create_context(&info);
   if (!server_state.context) {

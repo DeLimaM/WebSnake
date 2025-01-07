@@ -76,74 +76,57 @@ void update_game(Game *game, Direction new_direction) {
     return;
   }
 
+  if (can_change_direction(game, new_direction)) {
+    game->direction = new_direction;
+  }
+
   struct timespec now;
   clock_gettime(CLOCK_MONOTONIC, &now);
   long elapsed_ms = (now.tv_sec - game->last_update.tv_sec) * 1000 +
                     (now.tv_nsec - game->last_update.tv_nsec) / 1000000;
 
-  int is_perpendicular = 0;
-  if (new_direction != DIRECTION_NONE &&
-      can_change_direction(game, new_direction)) {
-    switch (game->direction) {
-    case DIRECTION_UP:
-    case DIRECTION_DOWN:
-      is_perpendicular =
-          (new_direction == DIRECTION_LEFT || new_direction == DIRECTION_RIGHT);
-      break;
-    case DIRECTION_LEFT:
-    case DIRECTION_RIGHT:
-      is_perpendicular =
-          (new_direction == DIRECTION_UP || new_direction == DIRECTION_DOWN);
-      break;
-    default:
-      break;
-    }
-
-    if (is_perpendicular) {
-      game->direction = new_direction;
-      elapsed_ms = GAME_TICK_RATE_MS;
-    }
+  if (elapsed_ms < GAME_TICK_RATE_MS) {
+    pthread_mutex_unlock(&game->mutex);
+    return;
   }
 
-  if (elapsed_ms >= GAME_TICK_RATE_MS) {
-    game->last_update = now;
+  game->last_update = now;
 
-    Position prev_positions[GAME_BOARD_WIDTH * GAME_BOARD_HEIGHT];
-    memcpy(prev_positions, game->snake, sizeof(Position) * game->snake_length);
+  Position prev_positions[GAME_BOARD_WIDTH * GAME_BOARD_HEIGHT];
+  memcpy(prev_positions, game->snake, sizeof(Position) * game->snake_length);
 
-    switch (game->direction) {
-    case DIRECTION_UP:
-      game->snake[0].y =
-          (game->snake[0].y - 1 + GAME_BOARD_HEIGHT) % GAME_BOARD_HEIGHT;
-      break;
-    case DIRECTION_DOWN:
-      game->snake[0].y = (game->snake[0].y + 1) % GAME_BOARD_HEIGHT;
-      break;
-    case DIRECTION_LEFT:
-      game->snake[0].x =
-          (game->snake[0].x - 1 + GAME_BOARD_WIDTH) % GAME_BOARD_WIDTH;
-      break;
-    case DIRECTION_RIGHT:
-      game->snake[0].x = (game->snake[0].x + 1) % GAME_BOARD_WIDTH;
-      break;
-    case DIRECTION_NONE:
-      break;
-    }
+  switch (game->direction) {
+  case DIRECTION_UP:
+    game->snake[0].y =
+        (game->snake[0].y - 1 + GAME_BOARD_HEIGHT) % GAME_BOARD_HEIGHT;
+    break;
+  case DIRECTION_DOWN:
+    game->snake[0].y = (game->snake[0].y + 1) % GAME_BOARD_HEIGHT;
+    break;
+  case DIRECTION_LEFT:
+    game->snake[0].x =
+        (game->snake[0].x - 1 + GAME_BOARD_WIDTH) % GAME_BOARD_WIDTH;
+    break;
+  case DIRECTION_RIGHT:
+    game->snake[0].x = (game->snake[0].x + 1) % GAME_BOARD_WIDTH;
+    break;
+  case DIRECTION_NONE:
+    break;
+  }
 
-    if (check_collision(game)) {
-      game->state = GAME_STATE_OVER;
-      pthread_mutex_unlock(&game->mutex);
-      return;
-    }
+  if (check_collision(game)) {
+    game->state = GAME_STATE_OVER;
+    pthread_mutex_unlock(&game->mutex);
+    return;
+  }
 
-    if (game->snake[0].x == game->food.x && game->snake[0].y == game->food.y) {
-      game->snake_length++;
-      place_food(game);
-    }
+  if (game->snake[0].x == game->food.x && game->snake[0].y == game->food.y) {
+    game->snake_length++;
+    place_food(game);
+  }
 
-    for (int i = 1; i < game->snake_length; i++) {
-      game->snake[i] = prev_positions[i - 1];
-    }
+  for (int i = 1; i < game->snake_length; i++) {
+    game->snake[i] = prev_positions[i - 1];
   }
 
   pthread_mutex_unlock(&game->mutex);
