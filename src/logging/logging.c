@@ -1,16 +1,20 @@
 #include "logging.h"
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 #include <time.h>
 
 void log_message(const char *type, const char *msg, const char *color) {
-  time_t now;
+  struct timeval tv;
   struct tm *tm_info;
-  char time_str[9];
+  char time_str[16];
 
-  time(&now);
-  tm_info = localtime(&now);
+  gettimeofday(&tv, NULL);
+  tm_info = localtime(&tv.tv_sec);
+
   strftime(time_str, sizeof(time_str), "%H:%M:%S", tm_info);
+  snprintf(time_str + strlen(time_str), sizeof(time_str) - strlen(time_str),
+           ".%03ld", tv.tv_usec / 1000);
 
   fprintf(stderr, "%s[%s] %s: %s%s\n", color, time_str, type, msg,
           ANSI_COLOR_RESET);

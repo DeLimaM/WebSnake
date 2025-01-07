@@ -37,6 +37,7 @@ void init_game(Game *game) {
   game->snake_length = GAME_INITIAL_SNAKE_LENGTH;
   game->direction = DIRECTION_RIGHT;
   game->state = GAME_STATE_RUNNING;
+  clock_gettime(CLOCK_MONOTONIC, &game->last_update);
 
   int start_x = GAME_BOARD_WIDTH / 2;
   int start_y = GAME_BOARD_HEIGHT / 2;
@@ -66,7 +67,6 @@ void change_direction(Game *game, Direction new_direction) {
   pthread_mutex_unlock(&game->mutex);
 }
 
-// TODO : add a separate timer for the game's tick rate
 void update_game(Game *game, Direction new_direction) {
   pthread_mutex_lock(&game->mutex);
 
@@ -78,6 +78,18 @@ void update_game(Game *game, Direction new_direction) {
   if (can_change_direction(game, new_direction)) {
     game->direction = new_direction;
   }
+
+  struct timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  long elapsed_ms = (now.tv_sec - game->last_update.tv_sec) * 1000 +
+                    (now.tv_nsec - game->last_update.tv_nsec) / 1000000;
+
+  if (elapsed_ms < GAME_TICK_RATE_MS) {
+    pthread_mutex_unlock(&game->mutex);
+    return;
+  }
+
+  game->last_update = now;
 
   Position prev_positions[GAME_BOARD_WIDTH * GAME_BOARD_HEIGHT];
   memcpy(prev_positions, game->snake, sizeof(Position) * game->snake_length);

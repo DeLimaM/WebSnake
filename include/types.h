@@ -27,6 +27,7 @@ typedef struct {
   Direction direction;
   GameState state;
   pthread_mutex_t mutex;
+  struct timespec last_update;
 } Game;
 
 typedef struct {

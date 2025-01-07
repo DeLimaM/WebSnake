@@ -187,6 +187,7 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
   return 0;
 }
 
+// TODO : serve the js and css files with the correct mime type
 int start_ws_server(int port) {
   struct lws_context_creation_info info = {
       .port = port,
