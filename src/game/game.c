@@ -67,6 +67,7 @@ void change_direction(Game *game, Direction new_direction) {
   pthread_mutex_unlock(&game->mutex);
 }
 
+// TODO : refactor game.c
 void update_game(Game *game, Direction new_direction) {
   pthread_mutex_lock(&game->mutex);
 
