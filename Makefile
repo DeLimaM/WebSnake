@@ -19,12 +19,12 @@ create_dirs:
 	mkdir -p $(BUILD_DIR)
 	mkdir -p $(BUILD_DIR)/game
 	mkdir -p $(BUILD_DIR)/server
+	mkdir -p $(BUILD_DIR)/logging
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
