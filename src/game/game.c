@@ -58,6 +58,15 @@ int can_change_direction(Game *game, Direction new_direction) {
          (new_direction == DIRECTION_DOWN && game->direction != DIRECTION_UP);
 }
 
+void change_direction(Game *game, Direction new_direction) {
+  pthread_mutex_lock(&game->mutex);
+  if (can_change_direction(game, new_direction)) {
+    game->direction = new_direction;
+  }
+  pthread_mutex_unlock(&game->mutex);
+}
+
+// TODO : add a separate timer for the game's tick rate
 void update_game(Game *game, Direction new_direction) {
   pthread_mutex_lock(&game->mutex);
 
@@ -68,9 +77,6 @@ void update_game(Game *game, Direction new_direction) {
 
   if (can_change_direction(game, new_direction)) {
     game->direction = new_direction;
-  } else {
-    pthread_mutex_unlock(&game->mutex);
-    return;
   }
 
   Position prev_positions[GAME_BOARD_WIDTH * GAME_BOARD_HEIGHT];

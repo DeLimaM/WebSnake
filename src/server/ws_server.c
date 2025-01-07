@@ -52,6 +52,10 @@ static int write_http_response(struct lws *wsi, unsigned char *buffer,
   return lws_http_transaction_completed(wsi);
 }
 
+static void reset_timer(struct lws *wsi) {
+  lws_set_timer_usecs(wsi, SERVER_TICK_RATE_MS * 1000);
+}
+
 static void send_game_update(struct lws *wsi) {
   char *rendered = render_game(&server_state.game);
   if (!rendered) {
@@ -61,6 +65,7 @@ static void send_game_update(struct lws *wsi) {
 
   log_message_sending("Updated game state");
   lws_write(wsi, (unsigned char *)rendered, strlen(rendered), LWS_WRITE_TEXT);
+  reset_timer(wsi);
 }
 
 static struct json_object *parse_json_message(const char *message) {
@@ -99,15 +104,15 @@ static void handle_ws_message(struct lws *wsi, const char *message) {
   struct json_object *direction_obj;
   if (json_object_object_get_ex(json, "direction", &direction_obj)) {
     const char *dir_str = json_object_get_string(direction_obj);
-    Direction new_dir = parse_direction_string(dir_str);
-    update_game(&server_state.game, new_dir);
+    Direction new_direction = parse_direction_string(dir_str);
+    update_game(&server_state.game, new_direction);
+    send_game_update(wsi);
   }
   json_object_put(json);
-
-  send_game_update(wsi);
 }
 
 static int handle_http_request(struct lws *wsi) {
+  log_message_received("HTTP request");
   char *rendered = render_game(&server_state.game);
   if (!rendered) {
     log_message_error("Failed to render game");
@@ -120,6 +125,7 @@ static int handle_http_request(struct lws *wsi) {
   size_t content_length = strlen(rendered);
 
   if (add_http_headers(wsi, &p, end, content_length)) {
+    log_message_error("Failed to add HTTP headers");
     return -1;
   }
 
@@ -133,7 +139,9 @@ static int handle_ws_established(struct lws *wsi) {
   pthread_mutex_unlock(&server_state.game.mutex);
   log_message_info("Game initialized");
 
+  update_game(&server_state.game, server_state.game.direction);
   send_game_update(wsi);
+  reset_timer(wsi);
   return 0;
 }
 
@@ -145,6 +153,12 @@ static int handle_ws_closed(void) {
 static int handle_ws_receive(struct lws *wsi, const char *message) {
   log_message_received(message);
   handle_ws_message(wsi, message);
+  return 0;
+}
+
+static int handle_timer_callback(struct lws *wsi) {
+  update_game(&server_state.game, server_state.game.direction);
+  send_game_update(wsi);
   return 0;
 }
 
@@ -162,8 +176,10 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
     return handle_ws_receive(wsi, (char *)in);
 
   case LWS_CALLBACK_HTTP:
-    log_message_received("HTTP request");
     return handle_http_request(wsi);
+
+  case LWS_CALLBACK_TIMER:
+    return handle_timer_callback(wsi);
 
   default:
     break;
@@ -177,12 +193,14 @@ int start_ws_server(int port) {
       .protocols = protocols,
       .gid = -1,
       .uid = -1,
+      .options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT,
   };
 
   init_game(&server_state.game);
 
   server_state.context = lws_create_context(&info);
   if (!server_state.context) {
+    log_message_error("Failed to create server context");
     return -1;
   }
   log_message_info("Server started");
