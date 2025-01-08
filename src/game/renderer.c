@@ -24,57 +24,44 @@ static int load_template() {
   return 1;
 }
 
-void init_board(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH]) {
+static char *generate_board_html(Game *game, char *buffer) {
+  char *ptr = buffer;
+  *ptr = '\0';
+
   for (int y = 0; y < GAME_BOARD_HEIGHT; y++) {
+    ptr += sprintf(ptr, "<div class='row'>");
     for (int x = 0; x < GAME_BOARD_WIDTH; x++) {
-      board[y][x] = RENDERER_CELL_EMPTY;
+      const char *cell_class = "cell empty";
+
+      for (int i = 0; i < game->snake_length; i++) {
+        if (game->snake[i].x == x && game->snake[i].y == y) {
+          cell_class = "cell snake";
+          break;
+        }
+      }
+
+      if (game->food.x == x && game->food.y == y) {
+        cell_class = "cell food";
+      }
+
+      ptr += sprintf(ptr, "<div class='%s'></div>", cell_class);
     }
+    ptr += sprintf(ptr, "</div>\n");
   }
-}
-
-void draw_snake(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH], Game *game) {
-  for (int i = 0; i < game->snake_length; i++) {
-    Position pos = game->snake[i];
-    board[pos.y][pos.x] =
-        i == 0 ? RENDERER_CELL_SNAKE_HEAD : RENDERER_CELL_SNAKE;
-  }
-}
-
-void draw_food(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH], Game *game) {
-  Position pos = game->food;
-  board[pos.y][pos.x] = RENDERER_CELL_FOOD;
+  return ptr;
 }
 
 char *render_game(Game *game) {
   static char buffer[RENDERER_BUFFER_SIZE];
   static char board_html[RENDERER_BOARD_HTML_SIZE];
   static char info_html[RENDERER_INFO_HTML_SIZE];
-  char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH];
 
   if (!load_template()) {
     log_message_error("The renderer failed to load the template");
     return NULL;
   }
 
-  init_board(board);
-  draw_snake(board, game);
-  draw_food(board, game);
-
-  char *ptr = board_html;
-  *ptr = '\0';
-
-  for (int y = 0; y < GAME_BOARD_HEIGHT; y++) {
-    ptr += sprintf(ptr, "<div class='row'>");
-    for (int x = 0; x < GAME_BOARD_WIDTH; x++) {
-      const char *cell_class =
-          board[y][x] == RENDERER_CELL_SNAKE        ? "cell snake"
-          : board[y][x] == RENDERER_CELL_SNAKE_HEAD ? "cell snake head"
-          : board[y][x] == RENDERER_CELL_FOOD       ? "cell food"
-                                                    : "cell empty";
-      ptr += sprintf(ptr, "<div class='%s'></div>", cell_class);
-    }
-    ptr += sprintf(ptr, "</div>\n");
-  }
+  generate_board_html(game, board_html);
 
   snprintf(info_html, RENDERER_INFO_HTML_SIZE,
            "<p>Score: %d</p><p>State: %s</p>",
@@ -83,10 +70,10 @@ char *render_game(Game *game) {
            : game->state == GAME_STATE_OVER  ? "Game Over"
                                              : "Waiting");
 
-  ptr = buffer;
+  char *ptr = buffer;
   *ptr = '\0';
-
   char *template_ptr = template_cache;
+
   while (*template_ptr) {
     if (strstr(template_ptr, "<!-- GAME_BOARD -->") == template_ptr) {
       ptr += sprintf(ptr, "%s", board_html);
