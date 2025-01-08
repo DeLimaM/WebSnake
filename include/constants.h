@@ -17,13 +17,14 @@
 #define RENDERER_TEMPLATE_PATH "src/game/template.html"
 #define RENDERER_CELL_EMPTY ' '
 #define RENDERER_CELL_SNAKE 'o'
+#define RENDERER_CELL_SNAKE_HEAD 'O'
 #define RENDERER_CELL_FOOD 'x'
 
 #define SERVER_PORT 8080
 #define SERVER_HTTP_BUFFER_SIZE 4096
 #define SERVER_SERVICE_INTERVAL 1
 #define SERVER_LOG_BUFFER_SIZE 512
-#define SERVER_TICK_RATE_MS 75
+#define SERVER_TICK_RATE_MS 25
 
 #define TESTS_HTML_OUTPUT_PATH "tests/out/test_output.html"
 

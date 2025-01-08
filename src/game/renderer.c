@@ -35,7 +35,8 @@ void init_board(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH]) {
 void draw_snake(char board[GAME_BOARD_HEIGHT][GAME_BOARD_WIDTH], Game *game) {
   for (int i = 0; i < game->snake_length; i++) {
     Position pos = game->snake[i];
-    board[pos.y][pos.x] = RENDERER_CELL_SNAKE;
+    board[pos.y][pos.x] =
+        i == 0 ? RENDERER_CELL_SNAKE_HEAD : RENDERER_CELL_SNAKE;
   }
 }
 
@@ -65,10 +66,11 @@ char *render_game(Game *game) {
   for (int y = 0; y < GAME_BOARD_HEIGHT; y++) {
     ptr += sprintf(ptr, "<div class='row'>");
     for (int x = 0; x < GAME_BOARD_WIDTH; x++) {
-      const char *cell_class = board[y][x] == RENDERER_CELL_SNAKE ? "cell snake"
-                               : board[y][x] == RENDERER_CELL_FOOD
-                                   ? "cell food"
-                                   : "cell empty";
+      const char *cell_class =
+          board[y][x] == RENDERER_CELL_SNAKE        ? "cell snake"
+          : board[y][x] == RENDERER_CELL_SNAKE_HEAD ? "cell snake head"
+          : board[y][x] == RENDERER_CELL_FOOD       ? "cell food"
+                                                    : "cell empty";
       ptr += sprintf(ptr, "<div class='%s'></div>", cell_class);
     }
     ptr += sprintf(ptr, "</div>\n");
