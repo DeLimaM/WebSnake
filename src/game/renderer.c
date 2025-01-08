@@ -32,19 +32,25 @@ static char *generate_board_html(Game *game, char *buffer) {
     ptr += sprintf(ptr, "<div class='row'>");
     for (int x = 0; x < GAME_BOARD_WIDTH; x++) {
       const char *cell_class = "cell empty";
+      int snake_index = -1;
 
       for (int i = 0; i < game->snake_length; i++) {
         if (game->snake[i].x == x && game->snake[i].y == y) {
           cell_class = "cell snake";
+          snake_index = i;
           break;
         }
       }
 
       if (game->food.x == x && game->food.y == y) {
         cell_class = "cell food";
+        ptr += sprintf(ptr, "<div class='%s'></div>", cell_class);
+      } else if (snake_index >= 0) {
+        ptr += sprintf(ptr, "<div class='%s' data-index='%d'></div>",
+                       cell_class, snake_index);
+      } else {
+        ptr += sprintf(ptr, "<div class='%s'></div>", cell_class);
       }
-
-      ptr += sprintf(ptr, "<div class='%s'></div>", cell_class);
     }
     ptr += sprintf(ptr, "</div>\n");
   }
