@@ -34,6 +34,8 @@ static const char *get_mime_type(const char *path) {
     return SERVER_MIME_TYPE_JS;
   if (strcmp(ext, ".html") == 0)
     return SERVER_MIME_TYPE_HTML;
+  if (strcmp(ext, ".ttf") == 0)
+    return SERVER_MIME_TYPE_TTF;
 
   return SERVER_MIME_TYPE_DEFAULT;
 }

@@ -32,6 +32,7 @@
 #define SERVER_MIME_TYPE_CSS "text/css"
 #define SERVER_MIME_TYPE_JS "application/javascript"
 #define SERVER_MIME_TYPE_HTML "text/html"
+#define SERVER_MIME_TYPE_TTF "font/ttf"
 #define SERVER_MIME_TYPE_DEFAULT "text/plain"
 
 #define TESTS_HTML_OUTPUT_PATH "tests/out/test_output.html"
