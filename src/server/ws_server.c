@@ -23,6 +23,75 @@ static struct lws_protocols protocols[] = {
         .id = 2,
     }};
 
+static const char *get_mime_type(const char *path) {
+  const char *ext = strrchr(path, '.');
+  if (!ext)
+    return SERVER_MIME_TYPE_DEFAULT;
+
+  if (strcmp(ext, ".css") == 0)
+    return SERVER_MIME_TYPE_CSS;
+  if (strcmp(ext, ".js") == 0)
+    return SERVER_MIME_TYPE_JS;
+  if (strcmp(ext, ".html") == 0)
+    return SERVER_MIME_TYPE_HTML;
+
+  return SERVER_MIME_TYPE_DEFAULT;
+}
+
+static int serve_static_file(struct lws *wsi, const char *request_path) {
+  if (*request_path == '/')
+    request_path++;
+
+  char full_path[SERVER_FILE_PATH_SIZE];
+  snprintf(full_path, sizeof(full_path), "src/game/%s", request_path);
+
+  FILE *file = fopen(full_path, "rb");
+  if (!file) {
+    char error_buf[SERVER_LOG_BUFFER_SIZE];
+    snprintf(error_buf, sizeof(error_buf), "Failed to open file: %s",
+             full_path);
+    log_message_error(error_buf);
+    return -1;
+  }
+
+  fseek(file, 0, SEEK_END);
+  size_t file_size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  const char *mime_type = get_mime_type(request_path);
+
+  unsigned char buffer[LWS_PRE + SERVER_HTTP_BUFFER_SIZE];
+  unsigned char *p = &buffer[LWS_PRE];
+  unsigned char *end = buffer + sizeof(buffer);
+
+  if (lws_add_http_common_headers(wsi, HTTP_STATUS_OK, mime_type, file_size, &p,
+                                  end) ||
+      lws_finalize_http_header(wsi, &p, end)) {
+    fclose(file);
+    return -1;
+  }
+
+  if (lws_write(wsi, buffer + LWS_PRE, p - (buffer + LWS_PRE),
+                LWS_WRITE_HTTP_HEADERS) < 0) {
+    fclose(file);
+    return -1;
+  }
+
+  char content_buffer[SERVER_FILE_CONTENT_BUFFER_SIZE];
+  size_t bytes_read;
+  while ((bytes_read = fread(content_buffer, 1, sizeof(content_buffer), file)) >
+         0) {
+    if (lws_write(wsi, (unsigned char *)content_buffer, bytes_read,
+                  LWS_WRITE_HTTP_FINAL) < 0) {
+      fclose(file);
+      return -1;
+    }
+  }
+
+  fclose(file);
+  return lws_http_transaction_completed(wsi);
+}
+
 static int add_http_headers(struct lws *wsi, unsigned char **p,
                             unsigned char *end, size_t content_length) {
   return lws_add_http_common_headers(wsi, HTTP_STATUS_OK, "text/html",
@@ -112,7 +181,14 @@ static void handle_ws_message(struct lws *wsi, const char *message) {
 }
 
 static int handle_http_request(struct lws *wsi) {
-  log_message_received("HTTP request");
+  char uri[SERVER_URI_SIZE];
+  lws_hdr_copy(wsi, uri, sizeof(uri), WSI_TOKEN_GET_URI);
+
+  if (strstr(uri, SERVER_STATIC_FOLDER_FILE_PATH)) {
+    return serve_static_file(wsi, uri);
+  }
+
+  log_message_received("HTTP request for initial HTML render");
   char *rendered = render_game(&server_state.game);
   if (!rendered) {
     log_message_error("Failed to render game");
@@ -187,7 +263,6 @@ static int callback_snake(struct lws *wsi, enum lws_callback_reasons reason,
   return 0;
 }
 
-// TODO : serve the js and css files with the correct mime type
 int start_ws_server(int port) {
   struct lws_context_creation_info info = {
       .port = port,
@@ -213,7 +288,7 @@ int start_ws_server(int port) {
   log_message_info("Server started");
 
   while (1) {
-    lws_service(server_state.context, SERVER_SERVICE_INTERVAL);
+    lws_service(server_state.context, SERVER_SERVICE_INTERVAL_MS);
   }
   log_message_info("Server stopped");
 
