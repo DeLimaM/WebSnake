@@ -4,6 +4,8 @@
 #include <sys/time.h>
 #include <time.h>
 
+const char *prev_type = NULL;
+
 void log_message(const char *type, const char *msg, const char *color) {
   struct timeval tv;
   struct tm *tm_info;
@@ -16,8 +18,15 @@ void log_message(const char *type, const char *msg, const char *color) {
   snprintf(time_str + strlen(time_str), sizeof(time_str) - strlen(time_str),
            ".%03ld", tv.tv_usec / 1000);
 
+  if (strcmp(type, "SENDING") == 0 && prev_type != NULL &&
+      strcmp(prev_type, "SENDING") == 0) {
+    fprintf(stderr, ANSI_COLOR_CLEAR_LINE ANSI_COLOR_CURSOR_UP);
+  }
+
   fprintf(stderr, "%s[%s] %s: %s%s\n", color, time_str, type, msg,
           ANSI_COLOR_RESET);
+
+  prev_type = type;
 }
 
 void log_message_info(const char *msg) {

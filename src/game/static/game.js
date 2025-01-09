@@ -1,3 +1,15 @@
+const YELLOW = "#FFD700";
+const GREEN = "#32CD32";
+const RED = "#FF0000";
+const BLUE = "#4169E1";
+
+function logMessage(type, message, color) {
+  const timestamp = getTimestamp();
+  const fullMessage = `${timestamp} ${type}: ${message}`;
+
+  console.log("%c%s", `color: ${color}`, fullMessage);
+}
+
 function getTimestamp() {
   const now = new Date();
   return `[${now.getHours().toString().padStart(2, "0")}:${now
@@ -10,7 +22,7 @@ function getTimestamp() {
 }
 
 const ws = new WebSocket("ws://localhost:8080");
-console.log(`${getTimestamp()} Connecting to WebSocket server...`);
+logMessage("INFO", "Connecting to server...", GREEN);
 
 document.addEventListener("keydown", (e) => {
   let direction = null;
@@ -30,25 +42,25 @@ document.addEventListener("keydown", (e) => {
   }
   if (direction) {
     const message = JSON.stringify({ direction });
-    console.log(`${getTimestamp()} SENDING: ${message}`);
+    logMessage("SENDING", message, "#FFD700");
     ws.send(message);
   }
 });
 
 ws.onopen = () => {
-  console.log(`${getTimestamp()} CONNECTED`);
+  logMessage("INFO", "CONNECTED", GREEN);
 };
 
 ws.onerror = (error) => {
-  console.error(`${getTimestamp()} ERROR:`, error);
+  logMessage("ERROR", error, RED);
 };
 
 ws.onclose = () => {
-  console.log(`${getTimestamp()} DISCONNECTED`);
+  logMessage("INFO", "DISCONNECTED", GREEN);
 };
 
 ws.onmessage = (event) => {
-  console.log(`${getTimestamp()} RECEIVED: Updated game state`);
+  logMessage("RECEIVED", "Updated game state", YELLOW);
   document.body.innerHTML = event.data;
   updateSnakeGradient();
 };
