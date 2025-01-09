@@ -24,6 +24,15 @@ static int load_template() {
   return 1;
 }
 
+static void generate_info_html(Game *game, char *info_html) {
+  snprintf(info_html, RENDERER_INFO_HTML_SIZE,
+           "<p>Score: %d</p><p>State: %s</p>",
+           game->snake_length - GAME_INITIAL_SNAKE_LENGTH,
+           game->state == GAME_STATE_RUNNING ? "Running"
+           : game->state == GAME_STATE_OVER  ? "Game Over"
+                                             : "Waiting");
+}
+
 static char *generate_board_html(Game *game, char *buffer) {
   char *ptr = buffer;
   *ptr = '\0';
@@ -57,25 +66,8 @@ static char *generate_board_html(Game *game, char *buffer) {
   return ptr;
 }
 
-char *render_game(Game *game) {
-  static char buffer[RENDERER_BUFFER_SIZE];
-  static char board_html[RENDERER_BOARD_HTML_SIZE];
-  static char info_html[RENDERER_INFO_HTML_SIZE];
-
-  if (!load_template()) {
-    log_message_error("The renderer failed to load the template");
-    return NULL;
-  }
-
-  generate_board_html(game, board_html);
-
-  snprintf(info_html, RENDERER_INFO_HTML_SIZE,
-           "<p>Score: %d</p><p>State: %s</p>",
-           game->snake_length - GAME_INITIAL_SNAKE_LENGTH,
-           game->state == GAME_STATE_RUNNING ? "Running"
-           : game->state == GAME_STATE_OVER  ? "Game Over"
-                                             : "Waiting");
-
+static void replace_template_markers(char *buffer, const char *board_html,
+                                     const char *info_html) {
   char *ptr = buffer;
   *ptr = '\0';
   char *template_ptr = template_cache;
@@ -92,6 +84,21 @@ char *render_game(Game *game) {
     }
   }
   *ptr = '\0';
+}
+
+char *render_game(Game *game) {
+  static char buffer[RENDERER_BUFFER_SIZE];
+  static char board_html[RENDERER_BOARD_HTML_SIZE];
+  static char info_html[RENDERER_INFO_HTML_SIZE];
+
+  if (!load_template()) {
+    log_message_error("The renderer failed to load the template");
+    return NULL;
+  }
+
+  generate_board_html(game, board_html);
+  generate_info_html(game, info_html);
+  replace_template_markers(buffer, board_html, info_html);
 
   return buffer;
 }
