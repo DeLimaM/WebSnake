@@ -42,7 +42,7 @@ document.addEventListener("keydown", (e) => {
   }
   if (direction) {
     const message = JSON.stringify({ direction });
-    logMessage("SENDING", message, "#FFD700");
+    logMessage("SENDING", message, YELLOW);
     ws.send(message);
   }
 });
@@ -60,7 +60,7 @@ ws.onclose = () => {
 };
 
 ws.onmessage = (event) => {
-  logMessage("RECEIVED", "Updated game state", YELLOW);
+  logMessage("RECEIVED", "Updated game state", BLUE);
   document.body.innerHTML = event.data;
   updateSnakeGradient();
 };

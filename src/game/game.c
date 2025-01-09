@@ -67,32 +67,7 @@ void change_direction(Game *game, Direction new_direction) {
   pthread_mutex_unlock(&game->mutex);
 }
 
-// TODO : refactor game.c
-void update_game(Game *game, Direction new_direction) {
-  pthread_mutex_lock(&game->mutex);
-
-  if (game->state != GAME_STATE_RUNNING) {
-    pthread_mutex_unlock(&game->mutex);
-    return;
-  }
-
-  if (can_change_direction(game, new_direction)) {
-    game->direction = new_direction;
-  }
-
-  struct timespec now;
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  long elapsed_ms = (now.tv_sec - game->last_update.tv_sec) * 1000 +
-                    (now.tv_nsec - game->last_update.tv_nsec) / 1000000;
-
-  if (elapsed_ms < GAME_TICK_RATE_MS) {
-    pthread_mutex_unlock(&game->mutex);
-    return;
-  }
-
-  game->last_update = now;
-
-  Position prev_positions[GAME_BOARD_WIDTH * GAME_BOARD_HEIGHT];
+static void update_snake_position(Game *game, Position *prev_positions) {
   memcpy(prev_positions, game->snake, sizeof(Position) * game->snake_length);
 
   switch (game->direction) {
@@ -113,6 +88,53 @@ void update_game(Game *game, Direction new_direction) {
   case DIRECTION_NONE:
     break;
   }
+}
+
+static void update_snake_body(Game *game, Position *prev_positions) {
+  for (int i = 1; i < game->snake_length; i++) {
+    game->snake[i] = prev_positions[i - 1];
+  }
+}
+
+static int should_update(Game *game) {
+  struct timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  long elapsed_ms = (now.tv_sec - game->last_update.tv_sec) * 1000 +
+                    (now.tv_nsec - game->last_update.tv_nsec) / 1000000;
+
+  if (elapsed_ms < GAME_TICK_RATE_MS) {
+    return 0;
+  }
+  game->last_update = now;
+  return 1;
+}
+
+static void handle_food_collision(Game *game) {
+  if (game->snake[0].x == game->food.x && game->snake[0].y == game->food.y) {
+    game->snake_length++;
+    place_food(game);
+  }
+}
+
+void update_game(Game *game, Direction new_direction) {
+  pthread_mutex_lock(&game->mutex);
+
+  if (game->state != GAME_STATE_RUNNING) {
+    pthread_mutex_unlock(&game->mutex);
+    return;
+  }
+
+  if (can_change_direction(game, new_direction)) {
+    game->direction = new_direction;
+  }
+
+  if (!should_update(game)) {
+    pthread_mutex_unlock(&game->mutex);
+    return;
+  }
+
+  Position prev_positions[GAME_BOARD_WIDTH * GAME_BOARD_HEIGHT];
+  update_snake_position(game, prev_positions);
 
   if (check_collision(game)) {
     game->state = GAME_STATE_OVER;
@@ -120,14 +142,8 @@ void update_game(Game *game, Direction new_direction) {
     return;
   }
 
-  if (game->snake[0].x == game->food.x && game->snake[0].y == game->food.y) {
-    game->snake_length++;
-    place_food(game);
-  }
-
-  for (int i = 1; i < game->snake_length; i++) {
-    game->snake[i] = prev_positions[i - 1];
-  }
+  handle_food_collision(game);
+  update_snake_body(game, prev_positions);
 
   pthread_mutex_unlock(&game->mutex);
 }
