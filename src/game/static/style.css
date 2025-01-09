@@ -8,7 +8,8 @@
   --color-secondary: #333333;
   --color-secondary-rgb: 33, 33, 33;
   --color-food: #ff0000;
-  --color-snake: #38d8a3;
+  --color-snake-head: #38d8a3;
+  --color-snake-tail: #0c724d;
   --color-font: #f5f5f5;
 }
 
@@ -58,7 +59,6 @@ body {
 }
 
 .cell.snake {
-  background-color: var(--color-snake);
   border: 1px solid var(--color-secondary);
 }
 

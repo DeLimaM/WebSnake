@@ -50,4 +50,40 @@ ws.onclose = () => {
 ws.onmessage = (event) => {
   console.log(`${getTimestamp()} RECEIVED: Updated game state`);
   document.body.innerHTML = event.data;
+  updateSnakeGradient();
 };
+
+function lerp(start, end, progress) {
+  return start + (end - start) * progress;
+}
+
+function updateSnakeGradient() {
+  const styles = getComputedStyle(document.body);
+  const headColor = styles.getPropertyValue("--color-snake-head").trim();
+  const tailColor = styles.getPropertyValue("--color-snake-tail").trim();
+  const headRGB = {
+    r: parseInt(headColor.slice(1, 3), 16),
+    g: parseInt(headColor.slice(3, 5), 16),
+    b: parseInt(headColor.slice(5, 7), 16),
+  };
+
+  const tailRGB = {
+    r: parseInt(tailColor.slice(1, 3), 16),
+    g: parseInt(tailColor.slice(3, 5), 16),
+    b: parseInt(tailColor.slice(5, 7), 16),
+  };
+
+  const snakeCells = document.querySelectorAll(".cell.snake");
+  snakeCells.forEach((cell) => {
+    const index = parseInt(cell.dataset.index);
+    const progress = index / (snakeCells.length - 1);
+
+    const r = Math.round(lerp(headRGB.r, tailRGB.r, progress));
+    const g = Math.round(lerp(headRGB.g, tailRGB.g, progress));
+    const b = Math.round(lerp(headRGB.b, tailRGB.b, progress));
+
+    cell.style.backgroundColor = `#${r.toString(16).padStart(2, "0")}${g
+      .toString(16)
+      .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  });
+}
