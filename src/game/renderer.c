@@ -102,3 +102,25 @@ char *render_game(Game *game) {
 
   return buffer;
 }
+
+char *render_game_state_json(Game *game) {
+  static char buffer[RENDERER_BUFFER_SIZE];
+  char *ptr = buffer;
+
+  ptr += sprintf(ptr, "{\"snake\":[");
+
+  for (int i = 0; i < game->snake_length; i++) {
+    ptr += sprintf(ptr, "%s{\"x\":%d,\"y\":%d}", i > 0 ? "," : "",
+                   game->snake[i].x, game->snake[i].y);
+  }
+
+  ptr += sprintf(
+      ptr, "],\"food\":{\"x\":%d,\"y\":%d},\"score\":%d,\"state\":\"%s\"}",
+      game->food.x, game->food.y,
+      game->snake_length - GAME_INITIAL_SNAKE_LENGTH,
+      game->state == GAME_STATE_RUNNING ? "Running"
+      : game->state == GAME_STATE_OVER  ? "Game Over"
+                                        : "Waiting");
+
+  return buffer;
+}

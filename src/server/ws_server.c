@@ -128,9 +128,9 @@ static void reset_timer(struct lws *wsi) {
 }
 
 static void send_game_update(struct lws *wsi) {
-  char *rendered = render_game(&server_state.game);
+  char *rendered = render_game_state_json(&server_state.game);
   if (!rendered) {
-    log_message_error("Failed to render game");
+    log_message_error("Failed to render game state");
     return;
   }
 
