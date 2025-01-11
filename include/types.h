@@ -28,6 +28,7 @@ typedef struct {
   GameState state;
   pthread_mutex_t mutex;
   struct timespec last_update;
+  double movement_accumulator;
 } Game;
 
 typedef struct {

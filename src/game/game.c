@@ -37,6 +37,7 @@ void init_game(Game *game) {
   game->snake_length = GAME_INITIAL_SNAKE_LENGTH;
   game->direction = DIRECTION_RIGHT;
   game->state = GAME_STATE_RUNNING;
+  game->movement_accumulator = 0.0;
   clock_gettime(CLOCK_MONOTONIC, &game->last_update);
 
   int start_x = GAME_BOARD_WIDTH / 2;
@@ -102,11 +103,14 @@ static int should_update(Game *game) {
   long elapsed_ms = (now.tv_sec - game->last_update.tv_sec) * 1000 +
                     (now.tv_nsec - game->last_update.tv_nsec) / 1000000;
 
-  if (elapsed_ms < GAME_TICK_RATE_MS) {
-    return 0;
-  }
+  game->movement_accumulator += elapsed_ms;
   game->last_update = now;
-  return 1;
+
+  if (game->movement_accumulator >= GAME_TICK_RATE_MS) {
+    game->movement_accumulator -= GAME_TICK_RATE_MS;
+    return 1;
+  }
+  return 0;
 }
 
 static void handle_food_collision(Game *game) {
