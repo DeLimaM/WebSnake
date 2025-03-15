@@ -8,6 +8,16 @@ Once the server started, go to localhost:8080 to access the game.
 
 ## Install
 
+### Dependencies
+
+#### Installation with apt :
+
+`sudo apt install libwebsockets-dev`
+
+`sudo apt install libjson-c-dev`
+
+### Building
+
 After opening a terminal in the directory of the project, you can build the the project :\
 `make`
 
