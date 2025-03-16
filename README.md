@@ -28,3 +28,9 @@ You can remove the binary from the user's bin folder :\
 `make uninstall`
 
 Additional options are also available in the Makefile.
+
+## Usage
+
+Simply run the executable :
+
+`./build/websnake` from the project's folder
